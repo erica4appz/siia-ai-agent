@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ProChat } from '@ant-design/pro-chat';
-import { ConfigProvider, theme, FloatButton, Popover } from 'antd';
-import { MessageOutlined, CloseOutlined } from '@ant-design/icons';
+import { ConfigProvider, theme, Card } from 'antd';
 import enUS from 'antd/locale/en_US';
 import axios from 'axios';
-import './App.css'
+import './App.css';
 
 const App = () => {
-  const queryParams = new URLSearchParams(window.location.search)
+  const queryParams = new URLSearchParams(window.location.search);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
   const urlColor = queryParams.get('color') || '#1677ff';
 
   const getChatHistory = () => {
@@ -35,82 +33,87 @@ const App = () => {
     });
   };
 
-  // Fetch history only when the popover is opened
   useEffect(() => {
-    if (open && history.length == 0) {
-      getChatHistory();
-    }
-  }, [open]);
-
-  // The chat content inside the popover
-  const chatContent = (
-    <div style={{ width: 400, height: 500, display: 'flex', flexDirection: 'column' }}>
-      <ProChat
-        loading={loading}
-        key={history.length}
-        helloMessage={false}
-        initialChats={history}
-        locale="en-US"
-        style={{ height: '100%' }}
-        showClearGuidance={false}
-        actions={{ clear: false }}
-        request={async (messages) => {
-          const lastMessage = messages[messages.length - 1];
-          const response = await fetch('https://api-dev.siia.ai/route', {
-            method: 'POST',
-            body: JSON.stringify({
-              "prompt": lastMessage.message,
-              "user_id": "U-102",
-              "user_role": "employee",
-              "session_id": "session-test-1",
-              "auto_execute": true
-            })
-          });
-          const data = await response.json();
-          return new Response(data.response);
-        }}
-        assistantMeta={{
-          avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Robot',
-          title: 'SiiA Assistant',
-        }}
-        userMeta={{
-          avatar: 'https://api.dicebear.com/9.x/miniavs/svg?seed=Jude',
-          title: 'Me',
-        }}
-      />
-    </div>
-  );
+    getChatHistory();
+  }, []);
 
   return (
-    <ConfigProvider theme={{ algorithm: theme.defaultAlgorithm, token: { colorPrimary: urlColor, controlOutline: "transparent" } }} locale={enUS}>
-      <Popover
-          content={chatContent}
-        title={
-          <div
-            style={{
+    <ConfigProvider
+      theme={{
+        algorithm: theme.defaultAlgorithm,
+        token: { colorPrimary: urlColor, controlOutline: "transparent" }
+      }}
+      locale={enUS}
+    >
+      {/* The outer container is forced to 100vw/100vh with no overflow.
+        This ensures the iframe content is perfectly edge-to-edge.
+      */}
+      <div style={{
+        height: '100vh',
+        width: '100vw',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <Card
+          title="SiiA AI Assistant"
+          variant="outlined"
+          // Remove card border radius and border to blend into the iframe
+          style={{
+            height: '100%',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: 0,
+            border: 'none'
+          }}
+          // body: { flex: 1 } allows the chat area to grow to fill the card
+          styles={{
+            header: { flex: '0 0 auto' },
+            body: {
+              padding: 0,
+              flex: '1 1 auto',
+              overflow: 'hidden',
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '12px 16px', // Standard Ant Design padding
-              borderBottom: '1px solid #f0f0f0' // Optional: adds separation
-            }}
-          >
-            <span style={{ fontWeight: 600 }}>SiiA AI Assistant</span>
-            
-          </div>
-        }
-          trigger="click"
-          open={open}
-          onOpenChange={(newOpen) => setOpen(newOpen)}
-          placement="topLeft" // Positions the popover above and to the left of the button
-          overlayInnerStyle={{ padding: 0 }} // Remove default padding for a seamless look
+              flexDirection: 'column'
+            }
+          }}
         >
-          <FloatButton
-            icon={open ? <CloseOutlined /> : <MessageOutlined />}
-            type="primary"
-            style={{ right: 24, bottom: 24, width: 60, height: 60 }}
+          <ProChat
+            loading={loading}
+            key={history.length}
+            helloMessage={false}
+            initialChats={history}
+            locale="en-US"
+            style={{ height: '100%', width: '100%' }}
+            showClearGuidance={false}
+            actions={{ clear: false }}
+            request={async (messages) => {
+              const lastMessage = messages[messages.length - 1];
+              const response = await fetch('https://api-dev.siia.ai/route', {
+                method: 'POST',
+                body: JSON.stringify({
+                  "prompt": lastMessage.message,
+                  "user_id": "U-102",
+                  "user_role": "employee",
+                  "session_id": "session-test-1",
+                  "auto_execute": true
+                })
+              });
+              const data = await response.json();
+              return new Response(data.response);
+            }}
+            assistantMeta={{
+              avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Robot',
+              title: 'SiiA Assistant',
+            }}
+            userMeta={{
+              avatar: 'https://api.dicebear.com/9.x/miniavs/svg?seed=Jude',
+              title: 'Me',
+            }}
           />
-      </Popover>
+        </Card>
+      </div>
     </ConfigProvider>
   );
 };
